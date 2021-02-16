@@ -271,8 +271,6 @@ _calculate_path(void)
     int efound; /* 1 if found; -1 if found build directory */
     wchar_t *buf;
     size_t bufsz;
-    size_t prefixsz;
-    wchar_t *defpath;
     wchar_t *_pythonpath, *_prefix, *_exec_prefix;
     wchar_t *lib_python;
     fprintf(stderr, "calc 1\n");
@@ -350,9 +348,6 @@ _calculate_path(void)
 
     wcsncpy(zip_path, _prefix, MAXPATHLEN);
     joinpath(zip_path, L"lib/python00.zip");
-    bufsz = wcslen(zip_path);   /* Replace "00" with version */
-    zip_path[bufsz - 6] = VERSION[0];
-    zip_path[bufsz - 5] = VERSION[2];
     fprintf(stderr, "zip_path %lu\n", wcslen(zip_path));
 
     fprintf(stderr, "calc 6 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
@@ -364,42 +359,7 @@ _calculate_path(void)
         joinpath(exec_prefix, L"lib/lib-dynload");
     }
 
-    /* Calculate size of return buffer.
-     */
-    bufsz = 0;
-
-    if (_rtpypath && _rtpypath[0] != '\0') {
-        size_t rtpypath_len;
-        rtpypath = Py_DecodeLocale(_rtpypath, &rtpypath_len);
-        if (rtpypath != NULL)
-            bufsz += rtpypath_len + 1;
-    }
-    fprintf(stderr, "bufsz %lu\n", bufsz);
-
-    defpath = _pythonpath;
-    prefixsz = wcslen(prefix) + 1;
-    while (1) {
-    fprintf(stderr, "bufsz %lu\n", bufsz);
-        wchar_t *delim = wcschr(defpath, DELIM);
-
-        if (defpath[0] != SEP)
-            /* Paths are relative to prefix */
-            bufsz += prefixsz;
-
-        if (delim)
-            bufsz += delim - defpath + 1;
-        else {
-            bufsz += wcslen(defpath) + 1;
-            break;
-        }
-        defpath = delim + 1;
-    }
-
-    fprintf(stderr, "bufsz %lu %lu\n", bufsz, wcslen(zip_path));
-    bufsz += wcslen(zip_path) + 1;
-    fprintf(stderr, "bufsz %lu %lu\n", bufsz, wcslen(exec_prefix));
-    bufsz += wcslen(exec_prefix) + 1;
-
+    bufsz = 200;
     buf = PyMem_New(wchar_t, bufsz);
     if (buf == NULL) {
         Py_FatalError(
