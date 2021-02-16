@@ -15,15 +15,6 @@ static wchar_t prefix[MAXPATHLEN+1];
 static wchar_t exec_prefix[MAXPATHLEN+1];
 static wchar_t progpath[MAXPATHLEN+1];
 
-//PyObject *PyErr_NoMemory() { abort(); }
-//void PyErr_SetString(PyObject *exception, const char *string) { abort(); }
-//int Py_IgnoreEnvironmentFlag;
-//void Py_FatalError(const char* message) { abort(); }
-//PyObject *PyErr_Format(PyObject *exception, const char *format, ...) { abort(); }
-//void _PyErr_BadInternalCall(const char *filename, int lineno) { abort(); }
-//int PyErr_BadArgument(void) { abort(); }
-//void PyErr_Clear(void) { abort(); }
-
 static int
 _Py_wstat(const wchar_t* path, struct stat *buf)
 {
@@ -266,8 +257,6 @@ search_for_exec_prefix(wchar_t *argv0_path, wchar_t *home,
     return 0;
 }
 
-
-
 static void
 _calculate_path(void)
 {
@@ -419,45 +408,14 @@ _calculate_path(void)
     buf[0] = '\0';
     fprintf(stderr, "calc 7 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
     fprintf(stderr, "calc 7 %p to %p %lu\n", buf, buf+bufsz, bufsz);
+    if (buf < _pythonpath && _pythonpath < buf+bufsz) {
+        fprintf(stderr, "we have an overlap!\n");
+    }
 }
 
 void calculate_path();
 
-//void mallocise() {
-//    void *a1 = PyMem_New(uint8_t, 48);
-//    void *a2 = PyMem_New(uint8_t, 244);
-//    void *a3 = PyMem_New(uint8_t, 244);
-//    void *a4 = PyMem_New(uint8_t, 56);
-//    PyMem_RawFree(NULL);
-//    PyMem_RawFree(PyMem_New(uint8_t, 11));
-//    PyMem_RawFree(PyMem_New(uint8_t, 11));
-//    PyMem_RawFree(PyMem_New(uint8_t, 14));
-//    PyMem_RawFree(PyMem_New(uint8_t, 4));
-//    PyMem_RawFree(PyMem_New(uint8_t, 20));
-//    PyMem_RawFree(PyMem_New(uint8_t, 21));
-//    PyMem_RawFree(PyMem_New(uint8_t, 81));
-//    PyMem_RawFree(PyMem_New(uint8_t, 82));
-//    PyMem_RawFree(PyMem_New(uint8_t, 15));
-//    PyMem_RawFree(PyMem_New(uint8_t, 4));
-//    PyMem_RawFree(PyMem_New(uint8_t, 26));
-//    PyMem_RawFree(PyMem_New(uint8_t, 87));
-//    void *a5 = PyMem_New(uint8_t, 56);
-//    void *a6 = PyMem_New(uint8_t, 1324);
-//}
-
 int run_script() {
-    //const char *filename = "/work/script.py";
-    //FILE *fp = fopen(filename, "r");
-    //if (!fp) {
-    //    perror(filename);
-    //    return 1;
-    //}
-    ////int x = open("/work/lib.zip", O_RDONLY);
-    ////int y = __wasilibc_open_nomode("/work/lib.zip", O_RDONLY);
-    ////FILE *fp2 = fopen("/work/lib.zip", "r");
-    ////fprintf(stderr, "got an fd %d %d %p\n", x, y, fp2);
-    ////return 0;
-
     int ret;
 
     //// Because loading encodings doesn't work :/
@@ -499,24 +457,12 @@ int run_script() {
         perror("set python path");
         return ret;
     }
-    //mallocise();
     _calculate_path();
-    fprintf(stdout, "{}");
-    //_calculate_path();
-    //Py_GetProgramFullPath();
     return 0;
-
-    Py_Initialize();
-    //ret = PyRun_SimpleFile(fp, filename);
-    ret = 0;
-
-    return ret;
 }
 
 int main(int argc, char **argv) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
     return run_script();
-    // TODO, or figure how to get return val from main
-    //exit(run_script());
 }
