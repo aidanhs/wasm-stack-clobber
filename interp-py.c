@@ -6,19 +6,9 @@
 #define MAXPATHLEN 4096
 #define SEP L'/'
 
-static void
-reduce(wchar_t *dir)
-{
-    size_t i = wcslen(dir);
-    while (i > 0 && dir[i] != SEP)
-        --i;
-    dir[i] = '\0';
-}
-
 int isfile(wchar_t *filename);
 
 int isdir(wchar_t *filename);
-
 
 /* Add a path component, by appending stuff to buffer.
    buffer must have at least MAXPATHLEN + 1 bytes allocated, and contain a
@@ -47,25 +37,6 @@ joinpath(wchar_t *buffer, wchar_t *stuff)
         k = MAXPATHLEN - n;
     wcsncpy(buffer+n, stuff, k);
     buffer[n+k] = '\0';
-}
-
-/* copy_absolute requires that path be allocated at least
-   MAXPATHLEN + 1 bytes and that p be no more than MAXPATHLEN bytes. */
-static void
-copy_absolute(wchar_t *path, wchar_t *p, size_t pathlen)
-{
-    if (p[0] == SEP)
-        wcscpy(path, p);
-    else {
-        if (!_Py_wgetcwd(path, pathlen)) {
-            /* unable to get the current directory */
-            wcscpy(path, p);
-            return;
-        }
-        if (p[0] == '.' && p[1] == SEP)
-            p += 2;
-        joinpath(path, p);
-    }
 }
 
 /* search for a prefix value in an environment file. If found, copy it
@@ -116,7 +87,7 @@ static wchar_t exec_prefix[MAXPATHLEN+1];
 
 static int
 search_for_exec_prefix(wchar_t *argv0_path,
-                       wchar_t *_exec_prefix, wchar_t *lib_python)
+                       wchar_t *_exec_prefix)
 {
     size_t n;
 
@@ -149,26 +120,8 @@ search_for_exec_prefix(wchar_t *argv0_path,
     }
 
     /* Search from argv0_path, until root is found */
-    copy_absolute(exec_prefix, argv0_path, MAXPATHLEN+1);
-    do {
-        n = wcslen(exec_prefix);
-        joinpath(exec_prefix, lib_python);
-        joinpath(exec_prefix, L"lib-dynload");
-        if (isdir(exec_prefix))
-            return 1;
-        exec_prefix[n] = L'\0';
-        reduce(exec_prefix);
-    } while (exec_prefix[0]);
+    wcscpy(exec_prefix, argv0_path);
 
-    /* Look at configure's EXEC_PREFIX */
-    wcsncpy(exec_prefix, _exec_prefix, MAXPATHLEN);
-    exec_prefix[MAXPATHLEN] = L'\0';
-    joinpath(exec_prefix, lib_python);
-    joinpath(exec_prefix, L"lib-dynload");
-    if (isdir(exec_prefix))
-        return 1;
-
-    /* Fail */
     return 0;
 }
 
@@ -176,22 +129,22 @@ static void
 _calculate_path(void)
 {
     wchar_t argv0_path[MAXPATHLEN+1];
-    argv0_path[0] = L'\0';
+    argv0_path[0] = L'/';
+    argv0_path[1] = L'x';
+    argv0_path[2] = L'\0';
     wchar_t zip_path[MAXPATHLEN+1];
     int efound; /* 1 if found; -1 if found build directory */
     wchar_t *buf;
     size_t bufsz;
     wchar_t *_pythonpath, *_prefix, *_exec_prefix;
-    wchar_t *lib_python;
     fprintf(stderr, "calc 1\n");
 
     _pythonpath = Py_DecodeLocale(":plat-linux", NULL);
     _prefix = L"/home/aidanhs/Desktop/per/bsaber/bsmeta/plugins/cpython/dist";
     _exec_prefix = L"/home/aidanhs/Desktop/per/bsaber/bsmeta/plugins/cpython/dist";
-    lib_python = L"lib/python3.5";
     fprintf(stderr, "calc 2\n");
 
-    if (!_pythonpath || !_prefix || !_exec_prefix || !lib_python) {
+    if (!_pythonpath || !_prefix || !_exec_prefix) {
         abort();
     }
 
@@ -223,7 +176,7 @@ _calculate_path(void)
     fprintf(stderr, "zip_path %lu\n", wcslen(zip_path));
 
     fprintf(stderr, "calc 6 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
-    efound = search_for_exec_prefix(argv0_path, _exec_prefix, lib_python);
+    efound = search_for_exec_prefix(argv0_path, _exec_prefix);
     if (!efound) {
         fprintf(stderr, "!efound\n");
     }
