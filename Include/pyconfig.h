@@ -842,7 +842,7 @@
 /* #undef HAVE_SIGINTERRUPT */
 
 /* Define to 1 if you have the <signal.h> header file. */
-#define HAVE_SIGNAL_H 1
+//#define HAVE_SIGNAL_H 1
 
 /* Define to 1 if you have the `sigpending' function. */
 /* #undef HAVE_SIGPENDING */
