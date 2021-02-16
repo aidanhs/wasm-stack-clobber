@@ -5,7 +5,6 @@
 #define DELIM L':'
 #define MAXPATHLEN 4096
 #define SEP L'/'
-static wchar_t exec_prefix[MAXPATHLEN+1];
 
 static int
 _Py_wstat(const wchar_t* path, struct stat *buf)
@@ -147,6 +146,8 @@ find_env_config_value(FILE * env_file, const wchar_t * key)
 /* search_for_exec_prefix requires that argv0_path be no more than
    MAXPATHLEN bytes long.
 */
+static wchar_t exec_prefix[MAXPATHLEN+1];
+
 static int
 search_for_exec_prefix(wchar_t *argv0_path,
                        wchar_t *_exec_prefix, wchar_t *lib_python)
@@ -156,9 +157,7 @@ search_for_exec_prefix(wchar_t *argv0_path,
     /* Check to see if argv[0] is in the build directory. "pybuilddir.txt"
        is written by setup.py and contains the relative path to the location
        of shared library modules. */
-    wcsncpy(exec_prefix, argv0_path, MAXPATHLEN);
-    exec_prefix[MAXPATHLEN] = L'\0';
-    joinpath(exec_prefix, L"pybuilddir.txt");
+    exec_prefix[0] = L'\0';
     if (isfile(exec_prefix)) {
         FILE *f = _Py_wfopen(exec_prefix, L"rb");
         if (f == NULL)
@@ -177,11 +176,7 @@ search_for_exec_prefix(wchar_t *argv0_path,
                                          rel_builddir_path, MAXPATHLEN);
                 Py_DECREF(decoded);
                 if (k >= 0) {
-                    rel_builddir_path[k] = L'\0';
-                    wcsncpy(exec_prefix, argv0_path, MAXPATHLEN);
-                    exec_prefix[MAXPATHLEN] = L'\0';
-                    joinpath(exec_prefix, rel_builddir_path);
-                    return -1;
+                    abort();
                 }
             }
         }
@@ -215,7 +210,7 @@ static void
 _calculate_path(void)
 {
     wchar_t argv0_path[MAXPATHLEN+1];
-    argv0_path[0] = '\0';
+    argv0_path[0] = L'\0';
     wchar_t zip_path[MAXPATHLEN+1];
     int efound; /* 1 if found; -1 if found build directory */
     wchar_t *buf;
@@ -241,7 +236,6 @@ _calculate_path(void)
      * other way to find a directory to start the search from.  If
      * $PATH isn't exported, you lose.
      */
-    argv0_path[MAXPATHLEN] = '\0';
     fprintf(stderr, "calc 4 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
 
     /* Search for an environment configuration file, first in the
