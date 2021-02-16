@@ -8,14 +8,17 @@
 
 int isfile(wchar_t *filename);
 
-int isdir(wchar_t *filename);
-
 FILE *myopen(wchar_t *filename, wchar_t *mode);
 
 /* search for a prefix value in an environment file. If found, copy it
    to the provided buffer, which is expected to be no more than MAXPATHLEN
    bytes long.
 */
+
+// all of these abort, but llvm doesn't know that!
+void *myPyUnicode_DecodeUTF8(const char *string, int length, const char *errors);
+int myPyUnicode_AsWideChar(void *unicode, wchar_t *w, int size);
+void extabort(void);
 
 static int
 find_env_config_value(FILE * env_file, const wchar_t * key)
@@ -25,29 +28,20 @@ find_env_config_value(FILE * env_file, const wchar_t * key)
 
     fseek(env_file, 0, SEEK_SET);
     while (!feof(env_file)) {
+        extabort();
         char * p = fgets(buffer, MAXPATHLEN*2, env_file);
         wchar_t tmpbuffer[MAXPATHLEN*2+1];
-        PyObject * decoded;
-        int n;
+        void * decoded;
+        int n = 0;
 
         if (p == NULL)
             break;
-        n = strlen(p);
-        if (p[n - 1] != '\n') {
-            /* line has overflowed - bail */
-            break;
-        }
-        if (p[0] == '#')    /* Comment - skip */
-            continue;
-        decoded = PyUnicode_DecodeUTF8(buffer, n, "surrogateescape");
+        decoded = myPyUnicode_DecodeUTF8(buffer, n, "surrogateescape");
         if (decoded != NULL) {
-            Py_ssize_t k;
-            k = PyUnicode_AsWideChar(decoded,
+            int k;
+            k = myPyUnicode_AsWideChar(decoded,
                                      tmpbuffer, MAXPATHLEN * 2);
-            Py_DECREF(decoded);
-            if (k >= 0) {
-                abort();
-            }
+            abort();
         }
     }
     return result;
@@ -72,21 +66,19 @@ search_for_exec_prefix(wchar_t *argv0_path)
         if (f == NULL)
             errno = 0;
         else {
+            extabort();
             char buf[MAXPATHLEN+1];
-            PyObject *decoded;
+            void *decoded;
             wchar_t rel_builddir_path[MAXPATHLEN+1];
             n = fread(buf, 1, MAXPATHLEN, f);
             buf[n] = '\0';
             fclose(f);
-            decoded = PyUnicode_DecodeUTF8(buf, n, "surrogateescape");
+            decoded = myPyUnicode_DecodeUTF8(buf, n, "surrogateescape");
             if (decoded != NULL) {
-                Py_ssize_t k;
-                k = PyUnicode_AsWideChar(decoded,
+                int k;
+                k = myPyUnicode_AsWideChar(decoded,
                                          rel_builddir_path, MAXPATHLEN);
-                Py_DECREF(decoded);
-                if (k >= 0) {
-                    abort();
-                }
+                abort();
             }
         }
     }
@@ -147,10 +139,9 @@ _calculate_path(void)
     }
 
     bufsz = 8000;
-    buf = PyMem_New(wchar_t, bufsz);
+    buf = malloc(sizeof(wchar_t)*bufsz);
     if (buf == NULL) {
-        Py_FatalError(
-            "Not enough memory for dynamic PYTHONPATH");
+        abort();
     }
     buf[0] = '\0';
     fprintf(stderr, "calc 7 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
@@ -163,47 +154,6 @@ _calculate_path(void)
 void calculate_path();
 
 int run_script() {
-    int ret;
-
-    //// Because loading encodings doesn't work :/
-    //Py_FileSystemDefaultEncoding = "utf-8";
-
-    ret = setenv("PYTHONHASHSEED", "0", 1);
-    if (ret != 0) {
-        perror("set python hash seed");
-        return ret;
-    }
-    // TODO: don't imply 'import site' on initialization
-    ret = setenv("PYTHONNOUSERSITE", "1", 1);
-    if (ret != 0) {
-        perror("set python user site");
-        return ret;
-    }
-    ret = setenv("PYTHONDONTWRITEBYTECODE", "1", 1);
-    if (ret != 0) {
-        perror("set python no write bytecode");
-        return ret;
-    }
-    ret = setenv("PYTHONDEBUG", "1", 1);
-    if (ret != 0) {
-        perror("set python debug");
-        return ret;
-    }
-    ret = setenv("PYTHONVERBOSE", "1", 1);
-    if (ret != 0) {
-        perror("set python verbose");
-        return ret;
-    }
-    //ret = setenv("PYTHONHOME", "/homeless", 1);
-    //if (ret != 0) {
-    //    perror("set python home");
-    //    return ret;
-    //}
-    ret = setenv("PYTHONPATH", "/work/lib.zip", 1);
-    if (ret != 0) {
-        perror("set python path");
-        return ret;
-    }
     _calculate_path();
     return 0;
 }
