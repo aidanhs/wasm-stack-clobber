@@ -15,6 +15,15 @@ static wchar_t prefix[MAXPATHLEN+1];
 static wchar_t exec_prefix[MAXPATHLEN+1];
 static wchar_t progpath[MAXPATHLEN+1];
 
+//PyObject *PyErr_NoMemory() { abort(); }
+//void PyErr_SetString(PyObject *exception, const char *string) { abort(); }
+//int Py_IgnoreEnvironmentFlag;
+//void Py_FatalError(const char* message) { abort(); }
+//PyObject *PyErr_Format(PyObject *exception, const char *format, ...) { abort(); }
+//void _PyErr_BadInternalCall(const char *filename, int lineno) { abort(); }
+//int PyErr_BadArgument(void) { abort(); }
+//void PyErr_Clear(void) { abort(); }
+
 static int
 _Py_wstat(const wchar_t* path, struct stat *buf)
 {
