@@ -10,34 +10,7 @@ int isfile(wchar_t *filename);
 
 int isdir(wchar_t *filename);
 
-/* Add a path component, by appending stuff to buffer.
-   buffer must have at least MAXPATHLEN + 1 bytes allocated, and contain a
-   NUL-terminated string with no more than MAXPATHLEN characters (not counting
-   the trailing NUL).  It's a fatal error if it contains a string longer than
-   that (callers must be careful!).  If these requirements are met, it's
-   guaranteed that buffer will still be a NUL-terminated string with no more
-   than MAXPATHLEN characters at exit.  If stuff is too long, only as much of
-   stuff as fits will be appended.
-*/
-static void
-joinpath(wchar_t *buffer, wchar_t *stuff)
-{
-    size_t n, k;
-    if (stuff[0] == SEP)
-        n = 0;
-    else {
-        n = wcslen(buffer);
-        if (n > 0 && buffer[n-1] != SEP && n < MAXPATHLEN)
-            buffer[n++] = SEP;
-    }
-    if (n > MAXPATHLEN)
-        abort();
-    k = wcslen(stuff);
-    if (n + k > MAXPATHLEN)
-        k = MAXPATHLEN - n;
-    wcsncpy(buffer+n, stuff, k);
-    buffer[n+k] = '\0';
-}
+FILE *myopen(wchar_t *filename, wchar_t *mode);
 
 /* search for a prefix value in an environment file. If found, copy it
    to the provided buffer, which is expected to be no more than MAXPATHLEN
@@ -86,8 +59,7 @@ find_env_config_value(FILE * env_file, const wchar_t * key)
 static wchar_t exec_prefix[MAXPATHLEN+1];
 
 static int
-search_for_exec_prefix(wchar_t *argv0_path,
-                       wchar_t *_exec_prefix)
+search_for_exec_prefix(wchar_t *argv0_path)
 {
     size_t n;
 
@@ -96,7 +68,7 @@ search_for_exec_prefix(wchar_t *argv0_path,
        of shared library modules. */
     exec_prefix[0] = L'\0';
     if (isfile(exec_prefix)) {
-        FILE *f = _Py_wfopen(exec_prefix, L"rb");
+        FILE *f = myopen(exec_prefix, L"rb");
         if (f == NULL)
             errno = 0;
         else {
@@ -136,15 +108,14 @@ _calculate_path(void)
     int efound; /* 1 if found; -1 if found build directory */
     wchar_t *buf;
     size_t bufsz;
-    wchar_t *_pythonpath, *_prefix, *_exec_prefix;
+    wchar_t *_pythonpath, *_prefix;
     fprintf(stderr, "calc 1\n");
 
     _pythonpath = Py_DecodeLocale(":plat-linux", NULL);
     _prefix = L"/home/aidanhs/Desktop/per/bsaber/bsmeta/plugins/cpython/dist";
-    _exec_prefix = L"/home/aidanhs/Desktop/per/bsaber/bsmeta/plugins/cpython/dist";
     fprintf(stderr, "calc 2\n");
 
-    if (!_pythonpath || !_prefix || !_exec_prefix) {
+    if (!_pythonpath || !_prefix) {
         abort();
     }
 
@@ -153,15 +124,10 @@ _calculate_path(void)
     {
         FILE * env_file = NULL;
 
-        env_file = _Py_wfopen(L"/dev/null", L"r");
+        env_file = myopen(L"/dev/null", L"r");
         if (env_file == NULL) {
             errno = 0;
-            env_file = NULL;
-            if (env_file == NULL) {
-                errno = 0;
-            }
-        }
-        if (env_file != NULL) {
+        } else {
             /* Look for a 'home' variable and set argv0_path to it, if found */
             if (find_env_config_value(env_file, L"home")) {
                 abort();
@@ -172,16 +138,15 @@ _calculate_path(void)
     }
 
     wcsncpy(zip_path, _prefix, MAXPATHLEN);
-    joinpath(zip_path, L"lib/python00.zip");
     fprintf(stderr, "zip_path %lu\n", wcslen(zip_path));
 
     fprintf(stderr, "calc 6 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
-    efound = search_for_exec_prefix(argv0_path, _exec_prefix);
+    efound = search_for_exec_prefix(argv0_path);
     if (!efound) {
         fprintf(stderr, "!efound\n");
     }
 
-    bufsz = 200;
+    bufsz = 8000;
     buf = PyMem_New(wchar_t, bufsz);
     if (buf == NULL) {
         Py_FatalError(
