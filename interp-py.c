@@ -6,31 +6,6 @@
 #define MAXPATHLEN 4096
 #define SEP L'/'
 
-char *myencode(const wchar_t* path) {
-    size_t len = wcslen(path);
-    char *out = malloc(len+1);
-    for (size_t i = 0; i < len; i++) {
-        out[i] = ((const char *)path)[i*4];
-    }
-    out[len] = '\0';
-    return out;
-}
-
-static int
-_Py_wstat(const wchar_t* path, struct stat *buf)
-{
-    int err;
-    char *fname;
-    fname = myencode(path);
-    if (fname == NULL) {
-        errno = EINVAL;
-        return -1;
-    }
-    err = stat(fname, buf);
-    free(fname);
-    return err;
-}
-
 static void
 reduce(wchar_t *dir)
 {
@@ -40,28 +15,9 @@ reduce(wchar_t *dir)
     dir[i] = '\0';
 }
 
-static int
-isfile(wchar_t *filename)          /* Is file, not directory */
-{
-    struct stat buf;
-    if (_Py_wstat(filename, &buf) != 0)
-        return 0;
-    if (!S_ISREG(buf.st_mode))
-        return 0;
-    return 1;
-}
+int isfile(wchar_t *filename);
 
-
-static int
-isdir(wchar_t *filename)                   /* Is directory */
-{
-    struct stat buf;
-    if (_Py_wstat(filename, &buf) != 0)
-        return 0;
-    if (!S_ISDIR(buf.st_mode))
-        return 0;
-    return 1;
-}
+int isdir(wchar_t *filename);
 
 
 /* Add a path component, by appending stuff to buffer.
@@ -241,19 +197,6 @@ _calculate_path(void)
 
     fprintf(stderr, "calc 3 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
 
-    /* If there is no slash in the argv0 path, then we have to
-     * assume python is on the user's $PATH, since there's no
-     * other way to find a directory to start the search from.  If
-     * $PATH isn't exported, you lose.
-     */
-    fprintf(stderr, "calc 4 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
-
-    /* Search for an environment configuration file, first in the
-       executable's directory and then in the parent directory.
-       If found, open it for use when searching for prefixes.
-    */
-
-    fprintf(stderr, "calc 5 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
     {
         FILE * env_file = NULL;
 
