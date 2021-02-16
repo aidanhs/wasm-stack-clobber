@@ -6,18 +6,28 @@
 #define MAXPATHLEN 4096
 #define SEP L'/'
 
+char *myencode(const wchar_t* path) {
+    size_t len = wcslen(path);
+    char *out = malloc(len+1);
+    for (size_t i = 0; i < len; i++) {
+        out[i] = ((const char *)path)[i*4];
+    }
+    out[len] = '\0';
+    return out;
+}
+
 static int
 _Py_wstat(const wchar_t* path, struct stat *buf)
 {
     int err;
     char *fname;
-    fname = Py_EncodeLocale(path, NULL);
+    fname = myencode(path);
     if (fname == NULL) {
         errno = EINVAL;
         return -1;
     }
     err = stat(fname, buf);
-    PyMem_Free(fname);
+    free(fname);
     return err;
 }
 
