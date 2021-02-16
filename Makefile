@@ -1,3 +1,5 @@
+.PHONY: clean
+
 WASMSDK = $(shell pwd)/wasi-sdk-12.0
 WASILIBC = $(shell pwd)/wasi-libc/sysroot
 COMPILE = $(WASMSDK)/bin/clang --sysroot=$(WASILIBC) -Wall -O2 -g -DPy_BUILD_CORE -I$(shell pwd)/Include
@@ -7,6 +9,9 @@ OBJS = Objects/abstract.o Objects/accu.o Objects/boolobject.o Objects/bytearrayo
 
 py.wasm: interp-py.c $(OBJS)
 	$(COMPILE) -o $@ $^
+
+clean:
+	rm -f $(OBJS)
 
 %.o: %.c
 	$(COMPILE) -c -o $@ $<

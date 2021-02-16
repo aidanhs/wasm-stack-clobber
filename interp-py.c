@@ -11,9 +11,7 @@
 #define VERSION "3.5"
 #define VPATH ""
 #define LANDMARK L"os.py"
-static wchar_t prefix[MAXPATHLEN+1];
 static wchar_t exec_prefix[MAXPATHLEN+1];
-static wchar_t progpath[MAXPATHLEN+1];
 
 static int
 _Py_wstat(const wchar_t* path, struct stat *buf)
@@ -109,18 +107,6 @@ copy_absolute(wchar_t *path, wchar_t *p, size_t pathlen)
             p += 2;
         joinpath(path, p);
     }
-}
-
-/* absolutize() requires that path be allocated at least MAXPATHLEN+1 bytes. */
-static void
-absolutize(wchar_t *path)
-{
-    wchar_t buffer[MAXPATHLEN+1];
-
-    if (path[0] == SEP)
-        return;
-    copy_absolute(buffer, path, MAXPATHLEN+1);
-    wcscpy(path, buffer);
 }
 
 /* search for a prefix value in an environment file. If found, copy it
@@ -260,13 +246,10 @@ search_for_exec_prefix(wchar_t *argv0_path, wchar_t *home,
 static void
 _calculate_path(void)
 {
-    char *_rtpypath = Py_GETENV("PYTHONPATH"); /* XXX use wide version on Windows */
-    wchar_t *rtpypath = NULL;
     wchar_t *home = NULL;
-    char *_path = getenv("PATH");
     wchar_t *path_buffer = NULL;
-    wchar_t *path = NULL;
     wchar_t argv0_path[MAXPATHLEN+1];
+    argv0_path[0] = '\0';
     wchar_t zip_path[MAXPATHLEN+1];
     int efound; /* 1 if found; -1 if found build directory */
     wchar_t *buf;
@@ -282,15 +265,9 @@ _calculate_path(void)
     fprintf(stderr, "calc 2\n");
 
     if (!_pythonpath || !_prefix || !_exec_prefix || !lib_python) {
-        Py_FatalError(
-            "Unable to decode path variables in getpath.c: "
-            "memory error");
+        abort();
     }
 
-    if (_path) {
-        path_buffer = Py_DecodeLocale(_path, NULL);
-        path = path_buffer;
-    }
     fprintf(stderr, "calc 3 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
 
     /* If there is no slash in the argv0 path, then we have to
@@ -298,18 +275,8 @@ _calculate_path(void)
      * other way to find a directory to start the search from.  If
      * $PATH isn't exported, you lose.
      */
-    progpath[0] = '\0';
-    PyMem_RawFree(path_buffer);
-    if (progpath[0] != SEP && progpath[0] != '\0')
-        absolutize(progpath);
-    wcsncpy(argv0_path, progpath, MAXPATHLEN);
     argv0_path[MAXPATHLEN] = '\0';
     fprintf(stderr, "calc 4 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
-
-    reduce(argv0_path);
-    /* At this point, argv0_path is guaranteed to be less than
-       MAXPATHLEN bytes long.
-    */
 
     /* Search for an environment configuration file, first in the
        executable's directory and then in the parent directory.
