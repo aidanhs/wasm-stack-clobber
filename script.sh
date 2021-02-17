@@ -11,5 +11,5 @@ WASMSDK=$(pwd)/wasi-sdk-12.0
 #    cd ..
 WASILIBC=$(pwd)/wasi-libc/sysroot
 
-make -j8 py.wasm
+$WASMSDK/bin/clang --sysroot=$WASILIBC -Wall -O2 -g -o py.wasm interp-py.c extra.c
 ./wasmtime-v0.22.1-x86_64-linux/wasmtime py.wasm
