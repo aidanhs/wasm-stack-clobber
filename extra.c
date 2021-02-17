@@ -24,3 +24,10 @@ int myPyUnicode_AsWideChar(void *unicode, wchar_t *w, int size) {
 void extabort(void) {
     abort();
 }
+
+wchar_t *pythonpath(void) {
+    wchar_t *ret = malloc(48);
+    ret[0] = L'/';
+    ret[1] = L'\0';
+    return ret;
+}

@@ -1,6 +1,9 @@
 #include <stdint.h>
 #include <string.h>
-#include "Python.h"
+#include <wchar.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #define DELIM L':'
 #define MAXPATHLEN 4096
@@ -89,6 +92,8 @@ search_for_exec_prefix(wchar_t *argv0_path)
     return 0;
 }
 
+wchar_t *pythonpath(void);
+
 static void
 _calculate_path(void)
 {
@@ -103,7 +108,7 @@ _calculate_path(void)
     wchar_t *_pythonpath, *_prefix;
     fprintf(stderr, "calc 1\n");
 
-    _pythonpath = Py_DecodeLocale(":plat-linux", NULL);
+    _pythonpath = pythonpath();
     _prefix = L"/home/aidanhs/Desktop/per/bsaber/bsmeta/plugins/cpython/dist";
     fprintf(stderr, "calc 2\n");
 
