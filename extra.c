@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <wchar.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 int
@@ -26,8 +27,21 @@ void extabort(void) {
 }
 
 wchar_t *pythonpath(void) {
-    wchar_t *ret = malloc(48);
-    ret[0] = L'/';
-    ret[1] = L'\0';
-    return ret;
+    return malloc(48);
+}
+
+#ifdef CUSTOM_LIBC
+void count_chunks(void* start, void* end, size_t used, void* arg) {
+    fprintf(stderr, "    start: %p, end: %p, used: %lu, arg: %p\n", start, end, used, arg);
+}
+
+extern struct malloc_state _gm_;
+#endif
+
+void inspect_it(void) {
+#ifdef CUSTOM_LIBC
+    void dlmalloc_inspect_all(void(*handler)(void*, void *, size_t, void*), void* arg);
+    fprintf(stderr, "inspecting (dlmalloc is at %p):\n", &_gm_);
+    dlmalloc_inspect_all(count_chunks, NULL);
+#endif
 }

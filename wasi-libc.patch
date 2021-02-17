@@ -1,0 +1,113 @@
+diff --git a/Makefile b/Makefile
+index d8e385e..77faedd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -513,7 +513,7 @@ finish: startup_files libc
+ 
+ 	# Check that the computed metadata matches the expected metadata.
+ 	# This ignores whitespace because on Windows the output has CRLF line endings.
+-	diff -wur "$(CURDIR)/expected/$(MULTIARCH_TRIPLE)" "$(SYSROOT_SHARE)"
++	#diff -wur "$(CURDIR)/expected/$(MULTIARCH_TRIPLE)" "$(SYSROOT_SHARE)"
+ 
+ 	#
+ 	# The build succeeded! The generated sysroot is in $(SYSROOT).
+diff --git a/dlmalloc/src/dlmalloc.c b/dlmalloc/src/dlmalloc.c
+index dab8df5..104bd00 100644
+--- a/dlmalloc/src/dlmalloc.c
++++ b/dlmalloc/src/dlmalloc.c
+@@ -2,6 +2,7 @@
+ // It sets configuration flags and controls which symbols are exported.
+ 
+ #include <stddef.h>
++#include <stdio.h>
+ #include <malloc.h>
+ 
+ // Define configuration macros for dlmalloc.
+@@ -12,8 +13,10 @@
+ // WebAssembly doesn't support shrinking linear memory.
+ #define MORECORE_CANNOT_TRIM 1
+ 
+-// Disable sanity checks to reduce code size.
+-#define ABORT __builtin_unreachable()
++//// Disable sanity checks to reduce code size.
++//#define ABORT __builtin_unreachable()
++#define DEBUG 1
++#define MALLOC_INSPECT_ALL 1
+ 
+ // If threads are enabled, enable support for threads.
+ #ifdef _REENTRANT
+@@ -54,10 +57,10 @@ extern const int __EINVAL;
+ // optimized away. By using "dlmalloc" in the implementation, we don't need
+ // -fno-builtin to avoid this problem.
+ #define USE_DL_PREFIX 1
+-#define DLMALLOC_EXPORT static inline
++#define DLMALLOC_EXPORT
+ 
+ // This isn't declared with DLMALLOC_EXPORT so make it static explicitly.
+-static size_t dlmalloc_usable_size(void*);
++//static size_t dlmalloc_usable_size(void*);
+ 
+ // Include the upstream dlmalloc's malloc.c.
+ #include "malloc.c"
+@@ -65,29 +68,42 @@ static size_t dlmalloc_usable_size(void*);
+ // Export the public names.
+ 
+ void *malloc(size_t size) {
+-    return dlmalloc(size);
++    void *p = dlmalloc(size);
++    fprintf(stderr, "libc malloc %p %lu\n", p, size);
++    return p;
+ }
+ 
+ void free(void *ptr) {
++    fprintf(stderr, "libc freeing %p\n", ptr);
+     dlfree(ptr);
+ }
+ 
+ void *calloc(size_t nmemb, size_t size) {
+-    return dlcalloc(nmemb, size);
++    void *p = dlcalloc(nmemb, size);
++    fprintf(stderr, "libc calloc %p %lu\n", p, nmemb * size);
++    return p;
+ }
+ 
+ void *realloc(void *ptr, size_t size) {
+-    return dlrealloc(ptr, size);
++    void *p = dlrealloc(ptr, size);
++    fprintf(stderr, "libc realloc %p %lu\n", p, size);
++    return p;
+ }
+ 
+ int posix_memalign(void **memptr, size_t alignment, size_t size) {
+-    return dlposix_memalign(memptr, alignment, size);
++    int r = dlposix_memalign(memptr, alignment, size);
++    fprintf(stderr, "libc posix_memalign %p %i\n", *memptr, r);
++    return r;
+ }
+ 
+ void* aligned_alloc(size_t alignment, size_t bytes) {
+-    return dlmemalign(alignment, bytes);
++    void *p = dlmemalign(alignment, bytes);
++    fprintf(stderr, "libc aligned_alloc %p %lu\n", p, bytes);
++    return p;
+ }
+ 
+ size_t malloc_usable_size(void *ptr) {
+-    return dlmalloc_usable_size(ptr);
++    size_t r = dlmalloc_usable_size(ptr);
++    fprintf(stderr, "libc malloc_usable_size %p %lu\n", ptr, r);
++    return r;
+ }
+diff --git a/dlmalloc/src/malloc.c b/dlmalloc/src/malloc.c
+index 03da739..2ee8090 100644
+--- a/dlmalloc/src/malloc.c
++++ b/dlmalloc/src/malloc.c
+@@ -2637,7 +2637,7 @@ static struct malloc_params mparams;
+ #if !ONLY_MSPACES
+ 
+ /* The global malloc_state used for all non-"mspace" calls */
+-static struct malloc_state _gm_;
++struct malloc_state _gm_;
+ #define gm                 (&_gm_)
+ #define is_global(M)       ((M) == &_gm_)
+ 

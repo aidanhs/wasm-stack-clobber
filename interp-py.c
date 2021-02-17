@@ -10,6 +10,8 @@ int isfile(wchar_t *filename);
 
 FILE *myopen(void);
 
+void inspect_it(void);
+
 // all of these abort, but llvm doesn't know that!
 void *myPyUnicode_DecodeUTF8(const char *string, int length, const char *errors);
 int myPyUnicode_AsWideChar(void *unicode, wchar_t *w, int size);
@@ -73,16 +75,6 @@ search_for_exec_prefix(wchar_t *argv0_path)
     wcscpy(exec_prefix, argv0_path);
 }
 
-void count_chunks(void* start, void* end, size_t used, void* arg) {
-    fprintf(stderr, "    start: %p, end: %p, used: %lu, arg: %p\n", start, end, used, arg);
-}
-
-void inspect_it(void) {
-    void dlmalloc_inspect_all(void(*handler)(void*, void *, size_t, void*), void* arg);
-    fprintf(stderr, "inspecting:\n");
-    dlmalloc_inspect_all(count_chunks, NULL);
-}
-
 static void
 _calculate_path(void)
 {
@@ -93,13 +85,11 @@ _calculate_path(void)
     wchar_t zip_path[MAXPATHLEN+1];
     wchar_t *buf;
     size_t bufsz;
-    wchar_t *_pythonpath;
-    fprintf(stderr, "calc 1\n");
 
     wchar_t *pythonpath(void);
-    _pythonpath = pythonpath();
+    wchar_t *_pythonpath = pythonpath();
 
-    fprintf(stderr, "calc 3 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
+    fprintf(stderr, "calc 3 %p\n", _pythonpath);
 
     inspect_it();
     {
@@ -120,13 +110,11 @@ _calculate_path(void)
 
     inspect_it();
 
-    fprintf(stderr, "calc 6 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
     search_for_exec_prefix(argv0_path);
 
     bufsz = sizeof(wchar_t)*8000;
     buf = malloc(bufsz);
     if (buf == NULL) abort();
-    fprintf(stderr, "calc 7 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
     fprintf(stderr, "calc 7 %p to %p %lu\n", buf, buf+bufsz, bufsz);
     if (buf < _pythonpath && _pythonpath < buf+bufsz) {
         fprintf(stderr, "we have an overlap!\n");
