@@ -5,9 +5,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define DELIM L':'
 #define MAXPATHLEN 4096
-#define SEP L'/'
 
 int isfile(wchar_t *filename);
 
@@ -26,6 +24,7 @@ void extabort(void);
 static int
 find_env_config_value(FILE * env_file, const wchar_t * key)
 {
+    extabort();
     int result = 0; /* meaning not found */
     char buffer[MAXPATHLEN*2+1];  /* allow extra for key, '=', etc. */
 
@@ -92,7 +91,15 @@ search_for_exec_prefix(wchar_t *argv0_path)
     return 0;
 }
 
-wchar_t *pythonpath(void);
+void count_chunks(void* start, void* end, size_t used, void* arg) {
+    fprintf(stderr, "    start: %p, end: %p, used: %lu, arg: %p\n", start, end, used, arg);
+}
+
+void inspect_it(void) {
+    void dlmalloc_inspect_all(void(*handler)(void*, void *, size_t, void*), void* arg);
+    fprintf(stderr, "inspecting:\n");
+    dlmalloc_inspect_all(count_chunks, NULL);
+}
 
 static void
 _calculate_path(void)
@@ -108,6 +115,7 @@ _calculate_path(void)
     wchar_t *_pythonpath, *_prefix;
     fprintf(stderr, "calc 1\n");
 
+    wchar_t *pythonpath(void);
     _pythonpath = pythonpath();
     _prefix = L"/home/aidanhs/Desktop/per/bsaber/bsmeta/plugins/cpython/dist";
     fprintf(stderr, "calc 2\n");
@@ -118,6 +126,7 @@ _calculate_path(void)
 
     fprintf(stderr, "calc 3 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
 
+    inspect_it();
     {
         FILE * env_file = NULL;
 
@@ -135,8 +144,13 @@ _calculate_path(void)
         }
     }
 
+    inspect_it();
+
     wcsncpy(zip_path, _prefix, MAXPATHLEN);
-    fprintf(stderr, "zip_path %lu\n", wcslen(zip_path));
+    //wcscpy(zip_path, _prefix);
+    fprintf(stderr, "zip_path %p-%p %ls %ls %lu\n", zip_path, zip_path + MAXPATHLEN+1, zip_path, _prefix, wcslen(zip_path));
+
+    inspect_it();
 
     fprintf(stderr, "calc 6 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
     efound = search_for_exec_prefix(argv0_path);
@@ -146,26 +160,16 @@ _calculate_path(void)
 
     bufsz = sizeof(wchar_t)*8000;
     buf = malloc(bufsz);
-    if (buf == NULL) {
-        abort();
-    }
-    buf[0] = '\0';
+    if (buf == NULL) abort();
     fprintf(stderr, "calc 7 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
     fprintf(stderr, "calc 7 %p to %p %lu\n", buf, buf+bufsz, bufsz);
     if (buf < _pythonpath && _pythonpath < buf+bufsz) {
         fprintf(stderr, "we have an overlap!\n");
+        inspect_it();
     }
 }
 
-void calculate_path();
-
-int run_script() {
+int main(int argc, char **argv) {
     _calculate_path();
     return 0;
-}
-
-int main(int argc, char **argv) {
-    setbuf(stdout, NULL);
-    setbuf(stderr, NULL);
-    return run_script();
 }

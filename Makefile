@@ -3,7 +3,7 @@
 
 WASMSDK = $(shell pwd)/wasi-sdk-12.0
 WASILIBC = $(shell pwd)/wasi-libc/sysroot
-COMPILE = $(WASMSDK)/bin/clang --sysroot=$(WASILIBC) -Wall -O2 -g -DPy_BUILD_CORE
+COMPILE = $(WASMSDK)/bin/clang --sysroot=$(WASILIBC) -Wall -O2 -g
 
 py.wasm: interp-py.c extra.c
 	$(COMPILE) -o $@ $^
