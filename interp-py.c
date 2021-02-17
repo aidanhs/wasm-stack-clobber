@@ -3,18 +3,12 @@
 #include <wchar.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 
 #define MAXPATHLEN 4096
 
 int isfile(wchar_t *filename);
 
-FILE *myopen(wchar_t *filename, wchar_t *mode);
-
-/* search for a prefix value in an environment file. If found, copy it
-   to the provided buffer, which is expected to be no more than MAXPATHLEN
-   bytes long.
-*/
+FILE *myopen(void);
 
 // all of these abort, but llvm doesn't know that!
 void *myPyUnicode_DecodeUTF8(const char *string, int length, const char *errors);
@@ -24,13 +18,12 @@ void extabort(void);
 static int
 find_env_config_value(FILE * env_file, const wchar_t * key)
 {
-    extabort();
+    extabort(); // ABORTS
     int result = 0; /* meaning not found */
     char buffer[MAXPATHLEN*2+1];  /* allow extra for key, '=', etc. */
 
     fseek(env_file, 0, SEEK_SET);
     while (!feof(env_file)) {
-        extabort();
         char * p = fgets(buffer, MAXPATHLEN*2, env_file);
         wchar_t tmpbuffer[MAXPATHLEN*2+1];
         void * decoded;
@@ -54,21 +47,14 @@ find_env_config_value(FILE * env_file, const wchar_t * key)
 */
 static wchar_t exec_prefix[MAXPATHLEN+1];
 
-static int
+static void
 search_for_exec_prefix(wchar_t *argv0_path)
 {
-    size_t n;
-
-    /* Check to see if argv[0] is in the build directory. "pybuilddir.txt"
-       is written by setup.py and contains the relative path to the location
-       of shared library modules. */
-    exec_prefix[0] = L'\0';
     if (isfile(exec_prefix)) {
-        FILE *f = myopen(exec_prefix, L"rb");
-        if (f == NULL)
-            errno = 0;
-        else {
-            extabort();
+        extabort(); // ABORTS
+        size_t n;
+        FILE *f = myopen();
+        if (f != NULL) {
             char buf[MAXPATHLEN+1];
             void *decoded;
             wchar_t rel_builddir_path[MAXPATHLEN+1];
@@ -84,11 +70,7 @@ search_for_exec_prefix(wchar_t *argv0_path)
             }
         }
     }
-
-    /* Search from argv0_path, until root is found */
     wcscpy(exec_prefix, argv0_path);
-
-    return 0;
 }
 
 void count_chunks(void* start, void* end, size_t used, void* arg) {
@@ -109,54 +91,37 @@ _calculate_path(void)
     argv0_path[1] = L'x';
     argv0_path[2] = L'\0';
     wchar_t zip_path[MAXPATHLEN+1];
-    int efound; /* 1 if found; -1 if found build directory */
     wchar_t *buf;
     size_t bufsz;
-    wchar_t *_pythonpath, *_prefix;
+    wchar_t *_pythonpath;
     fprintf(stderr, "calc 1\n");
 
     wchar_t *pythonpath(void);
     _pythonpath = pythonpath();
-    _prefix = L"/home/aidanhs/Desktop/per/bsaber/bsmeta/plugins/cpython/dist";
-    fprintf(stderr, "calc 2\n");
-
-    if (!_pythonpath || !_prefix) {
-        abort();
-    }
 
     fprintf(stderr, "calc 3 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
 
     inspect_it();
     {
-        FILE * env_file = NULL;
-
-        env_file = myopen(L"/dev/null", L"r");
-        if (env_file == NULL) {
-            errno = 0;
-        } else {
-            extabort();
-            /* Look for a 'home' variable and set argv0_path to it, if found */
+        FILE * env_file = myopen();
+        if (env_file != NULL) {
+            extabort(); // ABORTS
             if (find_env_config_value(env_file, L"home")) {
                 abort();
             }
-            fclose(env_file);
-            env_file = NULL;
         }
     }
 
     inspect_it();
 
-    wcsncpy(zip_path, _prefix, MAXPATHLEN);
-    //wcscpy(zip_path, _prefix);
-    fprintf(stderr, "zip_path %p-%p %ls %ls %lu\n", zip_path, zip_path + MAXPATHLEN+1, zip_path, _prefix, wcslen(zip_path));
+    wcsncpy(zip_path, L"/x.zip", MAXPATHLEN);
+    //wcscpy(zip_path, L"/x.zip");
+    fprintf(stderr, "zip_path %p-%p %ls %lu\n", zip_path, zip_path + MAXPATHLEN+1, zip_path, wcslen(zip_path));
 
     inspect_it();
 
     fprintf(stderr, "calc 6 =%ls= %p %lu\n", _pythonpath, _pythonpath, wcslen(_pythonpath));
-    efound = search_for_exec_prefix(argv0_path);
-    if (!efound) {
-        fprintf(stderr, "!efound\n");
-    }
+    search_for_exec_prefix(argv0_path);
 
     bufsz = sizeof(wchar_t)*8000;
     buf = malloc(bufsz);

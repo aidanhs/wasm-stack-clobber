@@ -9,7 +9,7 @@ isfile(wchar_t *filename)
     return 0;
 }
 
-FILE *myopen(wchar_t *filename, wchar_t *mode) {
+FILE *myopen(void) {
     return NULL;
 }
 
