@@ -1,4 +1,5 @@
 .PHONY: clean
+.PHONY: py.wasm # not really, but always keep it dirty while rebuilding libc
 
 WASMSDK = $(shell pwd)/wasi-sdk-12.0
 WASILIBC = $(shell pwd)/wasi-libc/sysroot

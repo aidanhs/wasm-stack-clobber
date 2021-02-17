@@ -125,6 +125,7 @@ _calculate_path(void)
         if (env_file == NULL) {
             errno = 0;
         } else {
+            extabort();
             /* Look for a 'home' variable and set argv0_path to it, if found */
             if (find_env_config_value(env_file, L"home")) {
                 abort();
@@ -143,8 +144,8 @@ _calculate_path(void)
         fprintf(stderr, "!efound\n");
     }
 
-    bufsz = 8000;
-    buf = malloc(sizeof(wchar_t)*bufsz);
+    bufsz = sizeof(wchar_t)*8000;
+    buf = malloc(bufsz);
     if (buf == NULL) {
         abort();
     }
